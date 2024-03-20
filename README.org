@@ -1,6 +1,1837 @@
+#+PROPERTY: header-args :tangle init-essentials.el
+
 # dot-emacs
 This init file include all the customization that emacs require to support for literate programming in python and r-statistics
 The file is an emacs "file.org" but will be tangled as a "file.el"
 
+* Header
 
+# #+begin_src emacs-lisp :comments link :padline true
+#+begin_src emacs-lisp
+;; init-essentials.el -- Emacs init file -*- lexical-binding: t -*-
+;;
+;;;; ====================== HEADER =========================
+;;
+;; Title: Emacs Init File with Essential Customization
+;; Author: Ricardo Orbegozo
+;; Created: 2020-04-13
+;; Updated: 2024/03/20 12:12:22
+;; Source: init-essentials.org
+;;
+#+end_src
+
+* CODE
+#+begin_src emacs-lisp
+;;;; Code:
+
+
+#+end_src
+
+** EMACS PACKAGE MANAGEMENT
+
+#+begin_src emacs-lisp
+;;;; =============== EMACS PACKAGE MANAGMENT ===============
+
+#+end_src
+
+*** Avoid warning about deprecated package =cl=
+
+#+begin_src emacs-lisp
+;;;~ Avoid warning about deprecated package cl
+
+(setq byte-compile-warnings '(cl-functions))
+
+
+#+end_src
+
+*** Package setup
+#+begin_src emacs-lisp
+;;;~ package setup
+
+(require 'package)
+
+(add-to-list 'package-archives 
+	     '("melpa" . "http://melpa.org/packages/"))
+(add-to-list 'package-archives 
+	     '("org" . "https://orgmode.org/elpa/"))
+
+(setq package-enable-at-startup nil)
+(package-initialize)
+
+
+;;;~ set package configuration using "use-package"
+
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
+
+(eval-and-compile
+  (setq use-package-always-ensure t
+	use-package-expand-minimally t
+	;;;~ record how many packages have been loaded by use-package
+	use-package-compute-statistics t)
+  ;;;~ show how many packages have been loaded by use-package
+  (add-hook 'emacs-startup-hook 'use-package-report)
+  )
+
+
+#+end_src
+
+references: emacs startup summary ([[https://emacs.stackexchange.com/questions/14551/whats-the-difference-between-after-init-hook-and-emacs-startup-hook][URL]])
+
+
+** EMACS SETTINGS
+
+#+begin_src emacs-lisp
+;;;; =================== EMACS SETTINGS ====================
+
+
+#+end_src
+
+*** (1/3) SETTINGS WITHOUT CORRESPONDING PACKAGES
+
+
+#+begin_src emacs-lisp
+;;;; (1/3) SETTINGS WITHOUT CORRESPONDING PACKAGES ---------
+
+
+#+end_src
+
+**** Emacs basic customizations: variables, toolbar, messages, etc 
+
+#+begin_src emacs-lisp
+  ;;;~ Emacs basic customizations: variables, toolbar, messages, etc 
+
+  (use-package emacs
+    :config
+
+    ;;;~ declare custom function to show file name and path
+
+    (defun show-file-name ()
+      "Show the full path file name in the minibuffer."
+      (interactive)
+      (if (equal current-prefix-arg nil) ; no C-u
+	  ;; then
+	  (message (buffer-file-name))
+	;; else
+	(insert (buffer-file-name))))
+    ;; (global-set-key [C-f1] 'show-file-name) ; deprecated
+
+    ;;;~ declare function to insert current date
+
+    (defun insert-date (&optional prefix)
+      "Insert the current date. With prefix-argument, use ISO format.
+	  With two prefix arguments, write out the day and month name."
+      (interactive "P")
+      (let ((format (cond
+		     ((not prefix) "%Y-%m-%d")
+		     ((equal prefix '(4)) "%Y/%m/%d %H:%M:%S")
+		     ((equal prefix '(16)) "%A, %d. %B %Y")
+		     ((equal prefix '(64)) "%W%u"))) ;; #week#day
+	    (system-time-locale "en_US")) ;; "de_DE"))
+	(insert
+	 (format-time-string format)))) ;; Thursday, 20. September 2018
+
+    ;;;~ don't show "C-g" prompt
+
+    ;; (setq ring-bell-function 'ignore)
+    ;; (setq visible-bell nil)
+
+    ;; (load-file "~/.emacs.d/init-private--variables.el")
+
+
+    ;;;~ show line numbers in: programming & text mode
+
+    (add-hook 'prog-mode-hook 'display-line-numbers-mode)
+    (add-hook 'text-mode-hook 'display-line-numbers-mode)
+
+    ;;;~ basic emacs configuration
+
+    (tool-bar-mode -1)                           ; don't show tool-bar
+    (fset 'yes-or-no-p 'y-or-n-p)                ; simplify questions
+    (put 'narrow-to-region 'disabled nil)        ; disable query
+    (setq-default line-spacing 2)             ; default line space
+    (savehist-mode 1)			       ; save minibuffer history
+    (setq frame-resize-pixelwise t)              ; resize frames by pixels
+
+    ;;;~ startup emacs config
+
+    (setq inhibit-startup-screen t)
+    ;; (setq initial-major-mode 'emacs-lisp-mode)
+    ;; (setq initial-scratch-message 'nil)
+    ;;     (setq initial-scratch-message
+    ;; 	  (format "%s This buffer is for text that is not saved, and for Lisp evaluation.
+    ;; %s To create a file, visit it with \\[find-file] and enter text in its buffer.\n\n" comment-start comment-start))
+
+    (setq auto-save-list-file-prefix
+	  (expand-file-name
+	   "../auto-save-list/.saves-" package-user-dir))
+
+    :bind (("C-ñ 1" . show-file-name)	       ; show file name path
+	   ("C-ñ ," . (lambda()(interactive)(insert "<"))); insert "<"
+	   ("C-ñ ." . (lambda()(interactive)(insert ">"))); insert ">"
+	   ("C-c d" . insert-date)               ; insert date HH:MM:SS
+	   ("<f1>"  . call-last-kbd-macro)       ; kbd for emacs macro
+	   ("<f7>"  . read-only-mode)            ; toggle read-write file mode
+	   ("<f12>" . display-line-numbers-mode)); show line numbers
+    )
+
+
+#+end_src
+
+
+*** (2/3) BUILTIN PACKAGES
+
+
+#+begin_src emacs-lisp
+;;;; (2/3) BUILTIN PACKAGES ---------------------------------
+
+#+end_src
+
+**** theme
+
+tiny customizations has been made using the =custom-theme-set-faces=
+
+source:
+https://emacs.stackexchange.com/questions/17431/how-do-i-change-portions-of-a-custom-theme
+
+A reference of the list options available, can be found here
+- [[help:face-attribute-name-alist]]
+- [[file:/usr/share/emacs/28.2/lisp/faces.el.gz::defun set-face-attribute (face frame &rest args][set face attributes]]
+- [[file:src-org/complementary-files/set_face_attribute_reference.el::;; :weight - `ultra-bold', `extra-bold', `bold', `semi-bold',][reference file]]
+- find installed fonts ([[https://ostechnix.com/find-installed-fonts-commandline-linux/][URL]])
+- filter fonts by language compatibility (e.g.: fc-list :lang=ja [[https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes][URL]])
+- filter fonts by family & font style (e.g.: fc-list :Dejavu:style=Book)
+- show font sample for comparison ([[https://askubuntu.com/questions/1167358/how-can-i-make-all-fonts-show-a-sample-string-for-comparison][URL]])
+  
+#+begin_src emacs-lisp
+;;;~ theme
+
+(use-package custom
+  :ensure nil
+  :config
+  ;; fix custom theme enable at startup emacs >26.3
+  (if (version<= "26.3"  emacs-version)
+      (setq custom--inhibit-theme-enable nil))
+  ;; theme
+  (load-theme 'wombat)
+  (custom-theme-set-faces
+
+   ;;;~ native theme
+
+   'wombat
+
+   ;;;~ cursor color
+
+   '(cursor ((t (:background "LightSkyBlue"))))
+
+   ;;;~ org
+   ;;;~ org babel blocks
+
+   '(org-block ((t (:background "gray10"))))
+   '(org-block-begin-line
+     ((t (:inherit org-block :foreground "gray70" :background "gray10"))))
+     ;; ((t (:foreground "khaki" :background "gray10"))))
+     ;; ((t (:foreground "gray40" :background "gray10"))))
+   '(org-block-end-line
+     ((t (:inherit org-block-begin-line))))
+     ;; ((t (:foreground "gray40" :background "gray10"))))
+   '(org-level-1
+     ((t (:inherit shadow
+	  :family "Dejavu Sans Mono"
+	  :height 160 :weight normal))))
+   '(org-level-2
+     ((t (:inherit shadow
+	  :family "Dejavu Sans Mono"
+	  :height 140 :weight normal))))
+     ;; ((t (:height 110 :weight semi-bold :foreground "sky blue"))))
+   '(org-level-3
+     ((t (:family "Dejavu Sans Mono"
+	  :height 130 :weight normal :foreground "LightCyan3"))))
+
+   ;;;~ org header tags (date, author, etc)
+
+   '(org-document-info-keyword ((t (:inherit shadow))))
+
+   ;;;~ #+PROPERTY:
+   ;;;~ #+RESULTS:
+   '(org-meta-line
+     ((t (:inherit shadow :background "gray10"))))
+   '(org-todo
+     ((t (:weight bold :foreground "orange red"))))
+   '(font-lock-variable-name-face
+     ((t (:foreground "khaki"))))
+   '(font-lock-keyword-face
+     ((t (:weight normal :foreground "sky blue"))));:weight bold
+   '(font-lock-string-face
+     ((t (:foreground "PaleGreen")))); tstd MediumSeaGreen Ori #95e454
+   ;;;~ comments
+   '(font-lock-comment-face ((t (:foreground "gray60")))); tst
+   ); end custom-theme-set-faces
+  ); end custom
+
+
+#+end_src
+
+**** update file changes
+
+#+begin_src emacs-lisp
+;;;~ update file changes
+
+(use-package autorevert
+  :ensure nil
+  :config
+  (global-auto-revert-mode 1))
+
+
+#+end_src
+
+**** delete selected region such as MS-Word (word, etc)
+
+#+begin_src emacs-lisp
+;;;~ delete selected region such as MS-Word (word, etc)
+
+(use-package delsel
+  :ensure nil
+  :config
+  (delete-selection-mode 1)
+  )
+
+
+#+end_src
+
+**** backup configuration (source: catchestocatches.com)
+
+#+begin_src emacs-lisp
+;;;~ backup configuration (source: catchestocatches.com)
+
+(use-package files
+  :ensure nil
+  :config
+  (setq confirm-kill-processes nil)
+  (setq backup-directory-alist
+	`(("." . ,(expand-file-name ".saves" user-emacs-directory))))
+  (setq
+   backup-by-copying t         ; don't clobber symlinks
+   kept-new-versions 50        ; keep 20 latest versions
+   kept-old-versions 200       ; don't bother with old versions
+   delete-old-versions t       ; don't ask about deleting old versions
+   version-control t           ; number backups
+   vc-make-backup-files t))    ; backup version controlled files
+
+
+#+end_src
+
+**** enable list of opened recent files
+
+#+begin_src emacs-lisp
+;;;~ enable list of opened recent files
+
+(use-package recentf
+  :ensure nil
+  :init  
+  (recentf-mode 1)                          ; save recent files
+  :config
+  (setq recentf-max-menu-items 25)
+  (setq recentf-max-saved-items 50)
+  (setq recentf-auto-cleanup 'never)        ; don't clean recent files
+  ;; (run-at-time nil (* 5 60) 'recentf-save-list) ; save recent files
+  :bind (("C-x f" . recentf-open-files)))
+
+
+#+end_src
+
+**** display line mode with line & column numbers
+
+#+begin_src emacs-lisp
+;;;~ display line mode with line & column numbers
+
+(use-package simple
+  :ensure nil
+  :config
+  (column-number-mode 1)       ; display column number in modeline 
+  (line-number-mode 1)         ; display number in modeline
+  (global-visual-line-mode 1)  ; wrap lines
+  :bind
+  (
+  ;;;~ clone indirec buffer (inspired by psychology PhD student)
+   ("C-x 5 c" . clone-indirect-buffer-other-frame)
+   ("C-x O" . (lambda ()(interactive)(other-window -1)))
+   ("C-x 5 o" . (lambda ()(interactive)(other-frame -1)))
+   ("C-x 5 O" . other-frame))
+  )
+
+
+#+end_src
+
+**** configure terminal and emacs prompt pattern
+
+#+begin_src emacs-lisp
+(use-package tramp
+  :ensure nil
+  :config
+  (setq tramp-shell-prompt-pattern "\\(?:^\\|\\)[^]#$%>
+]*#?[]#$%>].* *\\(\\[[[:digit:];]*[[:alpha:]] *\\)*")
+  ;; source:
+  ;; https://emacs.stackexchange.com/questions/44664/apply-ansi-color-escape-sequences-for-org-babel-results
+  (defun ek/babel-ansi ()
+    (when-let ((beg (org-babel-where-is-src-block-result nil nil)))
+      (save-excursion
+	(goto-char beg)
+	(when (looking-at org-babel-result-regexp)
+          (let ((end (org-babel-result-end))
+		(ansi-color-context-region nil))
+            (ansi-color-apply-on-region beg end))))))
+  (add-hook 'org-babel-after-execute-hook 'ek/babel-ansi)
+  )
+
+
+#+end_src
+
+**** unset emacs predefined key bindings
+
+#+begin_src emacs-lisp
+;;;~ unset emacs predefined key bindings 
+
+(use-package bind-key
+  :ensure nil
+  :config
+  (dolist (key '("\C-z"        ; minimize frame
+		 "\M-q"        ; fill-paragraph
+		 "\C-d"	       ; delete-char
+		 [?\C-\.]))    ; flyspell-auto-correct-word -> "C-M-i"
+
+    (global-unset-key key)     ; is also exists "local-unset-key"
+    )
+  ;; (unbind-key "C-." flyspell-mode-map)
+  (global-set-key (kbd "C-S-d") 'delete-char)
+  (global-set-key (kbd "<XF86Eject>") 'delete-char)
+  (global-set-key (kbd "<f6>") #'(lambda()(interactive)(insert "β")))
+  )
+
+
+#+end_src
+
+**** custom user macros
+
+#+begin_src emacs-lisp
+;;;~ custom user macros
+
+(use-package macros
+  :ensure nil
+  :bind
+  ("M-ñ M-c" . macro-taxonomy-cleansing)
+  :config
+
+  ;;;~ macro for specific cleansing 
+
+  (fset 'macro-taxonomy-cleansing
+	[C-home ?\C-\M-% ?\\ ?\( ?\' ?\\ ?| ?\[ ?\[ ?\] ?\\ ?| ?\[ ?\] ?\] ?\\ ?| ?^ ?x ?  ?\\ ?\) return return ?! C-home ?\M-x ?s ?o ?r ?t ?- ?l ?i ?n ?e ?s return])
+
+  )
+
+
+#+end_src
+
+**** avoid emacs to overwrite customization file
+
+#+begin_src emacs-lisp
+;;;~ avoid emacs to overwrite customization file
+
+(use-package cus-edit
+  :ensure nil
+  :config
+  (setq custom-file null-device)
+  )
+
+
+#+end_src
+
+**** frame customizations (title, cursor, location and font)
+
+#+begin_src emacs-lisp
+;;;~ frame customizations (title, cursor, location and font)
+
+(use-package frame
+  :ensure nil
+  :config
+
+  ;;;~ custom title format
+
+  (setq frame-title-format
+	(setq icon-title-format
+	      (format 
+	       "emacs-%s%s@%s : %%b"
+	       emacs-major-version
+	       emacs-minor-version
+	       (cond ((equal system-type 'windows-nt) 'windows-nt) 
+		     ((equal system-type 'gnu/linux) 'anarchy)
+		     ((equal system-type 'darwin) 'darwin)))))
+
+  ;;;~ split window vertically
+
+  (defun toggle-window-split ()
+    (interactive)
+    (if (= (count-windows) 2)
+	(let* ((this-win-buffer (window-buffer))
+	       (next-win-buffer (window-buffer (next-window)))
+	       (this-win-edges (window-edges (selected-window)))
+	       (next-win-edges (window-edges (next-window)))
+	       (this-win-2nd (not (and (<= (car this-win-edges)
+					   (car next-win-edges))
+				       (<= (cadr this-win-edges)
+					   (cadr next-win-edges)))))
+	       (splitter
+		(if (= (car this-win-edges)
+		       (car (window-edges (next-window))))
+		    'split-window-horizontally
+		  'split-window-vertically)))
+	  (delete-other-windows)
+	  (let ((first-win (selected-window)))
+	    (funcall splitter)
+	    (if this-win-2nd (other-window 1))
+	    (set-window-buffer (selected-window) this-win-buffer)
+	    (set-window-buffer (next-window) next-win-buffer)
+	    (select-window first-win)
+	    (if this-win-2nd (other-window 1))))))
+
+  ;;;~ frame geometry and location 
+
+         ;;; TODO: maybe is a good idea to rewrite the code like this
+       ;; (panel_height )
+       ;; (screen_width (caddr (frame-monitor-workarea)))
+       ;; (screen_height (cadddr (frame-monitor-workarea)))
+       ;; (width_border_left )
+       ;; (width_border_right )
+       ;; (height_tittle_bar )
+       ;; (height_bottom_border )
+       ;; (left )
+       ;; (middle )
+       ;; (right )
+       ;; (upper 0)
+       ;; (center (/ screen_height 3))
+       ;; (bottom (* center 2))
+       ;; (third )
+       ;; (one_third )
+       ;; (two_third )
+
+  (let*
+      (
+       (calculated-frame-height
+  	(- (* (/ (cadddr (frame-monitor-workarea)) 3) 2) 56)) ;;54))
+       (window-border 3)
+       (calculated-frame-width
+  	(- (/ (caddr (frame-monitor-workarea)) 3)
+	   (cdr (assoc 'scroll-bar-width (frame-parameters)))
+	   (* window-border 2))) ;; window-border)) ;; 622
+       (frame-position-list '())
+       (positions (/ (caddr (frame-monitor-workarea)) 3))
+       (wm--info (shell-command-to-string "wmctrl -m"))
+       (wm--detected (and (string-match "^Name: \\(.*\\)" wm--info)
+			  (print (match-string 1 wm--info)))))
+    
+    (dotimes (i 3)
+      (add-to-list
+       'frame-position-list
+       (if (equal wm--detected "Xfwm4")
+	   ;;;~ xfce wm require complex calculation
+	   (+ (+ (* positions (expt i 1))) 
+	      (* (% 1 (expt i i)) (expt i (+ i 1))))
+	 ;;;~ the other window managers do not require this
+	 (+ (* positions (expt i 1)))
+	 )
+       t))
+
+    (setq initial-frame-alist
+  	  `((vertical-scroll-bars . nil)
+	    (left-fringe . ,(cdr (assoc 'left-fringe (frame-parameters))))
+	    (right-fringe . ,(cdr (assoc 'right-fringe (frame-parameters))))
+	    (left . ,(elt frame-position-list 0))
+  	    (top . 0)
+  	    (height text-pixels . ,calculated-frame-height)
+  	    (width text-pixels . ,calculated-frame-width)))
+
+    (setq default-frame-alist
+  	  `((vertical-scroll-bars . nil)
+	    (left-fringe . ,(cdr (assoc 'left-fringe (frame-parameters))))
+	    (right-fringe . ,(cdr (assoc 'right-fringe (frame-parameters))))
+	    (left . ,(elt frame-position-list 1))
+  	    (top . 0)
+  	    (height text-pixels . ,calculated-frame-height)
+  	    (width text-pixels . ,calculated-frame-width)))
+
+    (cond ((equal system-type 'darwin)
+	   (add-to-list 'initial-frame-alist '(font . "Monaco 13" ))
+	   (add-to-list 'default-frame-alist '(font . "Monaco 13" )))
+	  ((equal system-type 'linux)
+	   (add-to-list 'initial-frame-alist '(font . "Ubuntu Mono-11"))
+	   (add-to-list 'default-frame-alist '(font . "Ubuntu Mono-11")))
+	  )
+    
+    (defun modify-frame-location-upper-left () 
+      (interactive)
+      (modify-frame-parameters
+       nil
+       `((left . ,(elt frame-position-list 0))
+  	 (top . 0)
+  	 (height text-pixels . ,calculated-frame-height)
+  	 (width text-pixels . ,calculated-frame-width))))
+
+    (defun modify-frame-location-upper-middle () 
+      (interactive)
+      (modify-frame-parameters
+       nil
+       `((left . ,(elt frame-position-list 1))
+  	 (top . 0)
+  	 (height text-pixels . ,calculated-frame-height)
+  	 (width text-pixels . ,calculated-frame-width))))
+
+    (defun modify-frame-location-upper-right () 
+      (interactive)
+      (modify-frame-parameters
+       nil
+       `((left . ,(elt frame-position-list 2))
+  	 (top . 0)
+  	 (height text-pixels . ,calculated-frame-height)
+  	 (width text-pixels . ,calculated-frame-width))))
+
+    (defun modify-frame-location-lower-left () 
+      (interactive)
+      (modify-frame-parameters
+       nil
+       `((left . ,(elt frame-position-list 0))
+  	 (top . ,(+ calculated-frame-height 50))
+  	 (height text-pixels . ,(- (/ calculated-frame-height 2) 25))
+  	 (width text-pixels . ,calculated-frame-width))))
+
+    (defun modify-frame-location-lower-middle () 
+      (interactive)
+      (modify-frame-parameters
+       nil
+       `((left . ,(elt frame-position-list 1))
+  	 (top . ,(+ calculated-frame-height 50))
+  	 (height text-pixels . ,(- (/ calculated-frame-height 2) 25))
+  	 (width text-pixels . ,calculated-frame-width))))
+
+    (defun modify-frame-location-lower-right () 
+      (interactive)
+      (modify-frame-parameters
+       nil
+       `((left . ,(elt frame-position-list 2))
+  	 (top . ,(+ calculated-frame-height 50))
+  	 (height text-pixels . ,(- (/ calculated-frame-height 2) 25))
+  	 (width text-pixels . ,calculated-frame-width)))))
+
+  (defun new-frame-location-upper-right ()
+    (interactive)
+    (progn (select-frame (make-frame))
+	   (modify-frame-location-upper-right)))
+
+  (defun fill-screen-with-frames ()
+    (interactive)
+    ;; Fill the upper row with frames:
+    ;;  * locating the original frame to the left
+    (modify-frame-location-upper-left)
+    ;;  * and making new frames in the middle and the right
+    (let* ((location-list
+	    '(modify-frame-location-upper-middle
+	      modify-frame-location-upper-right
+	      modify-frame-location-lower-left
+	      modify-frame-location-lower-middle
+	      modify-frame-location-lower-right)))
+      (dolist (frame-location location-list)
+	(make-frame)
+	(other-frame -1)
+	(funcall frame-location))))
+
+  ;;;~ Cursor Color
+  
+  ;; (set-cursor-color "SpringGreen")
+
+  ;;;~ Change Cursor Color According To Mode
+
+  ;;;~  inspired by:
+  ;;;~   http://www.emacswiki.org/emacs/ChangingCursorDynamically
+  ;;;~   Valid values for set-cursor-type are: t, nil, box, hollow
+  ;;;~   we can use bar & hbar, like this: (bar . WIDTH), (hbar. HEIGHT)
+
+  (setq cursor--read-only-color       "white"
+	cursor--read-only-cursor-type 'hollow
+	;; cursor--overwrite-color       "red"
+	cursor--overwrite-color
+	(face-attribute 'font-lock-string-face :foreground)
+	cursor--overwrite-cursor-type 'box
+	;; cursor--normal-color          "turquoise1"
+	cursor--normal-color (face-attribute 'cursor :background)
+	cursor--normal-cursor-type    'box)
+  
+  (defun cursor--set-cursor-according-to-mode ()
+    "change cursor color and type according to some minor modes."
+    (cond
+     (buffer-read-only
+      (set-cursor-color cursor--read-only-color)
+      (setq cursor-type cursor--read-only-cursor-type))
+     (overwrite-mode
+      (set-cursor-color cursor--overwrite-color)
+      (setq cursor-type cursor--overwrite-cursor-type))
+     (t 
+      (set-cursor-color cursor--normal-color)
+      (setq cursor-type cursor--normal-cursor-type))))
+
+  (add-hook 'post-command-hook 'cursor--set-cursor-according-to-mode)
+  
+  :bind
+  (("<C-f1>" . modify-frame-location-upper-left)
+   ("<C-f2>" . modify-frame-location-upper-middle)
+   ("<C-f3>" . modify-frame-location-upper-right)
+   ("C-ñ <C-f1>" . modify-frame-location-lower-left)
+   ("C-ñ <C-f2>" . modify-frame-location-lower-middle)
+   ("C-ñ <C-f3>" . modify-frame-location-lower-right)
+   ("C-ñ <C-f4>" . fill-screen-with-frames)
+   ("C-x |" . toggle-window-split)
+
+   ;;;~ new frame in custom position
+
+   ("C-x 5 3" .	new-frame-location-upper-right))
+  )
+
+
+#+end_src
+
+**** remember cursor last location
+
+#+begin_src emacs-lisp
+;;;~ remember cursor last location
+
+(use-package saveplace
+  :ensure nil
+  :config
+  (setq save-place-file 
+	(expand-file-name "places" user-emacs-directory))
+  (save-place-mode t)
+  )
+
+
+#+end_src
+
+**** set cursor bookmark directory
+
+#+begin_src emacs-lisp
+;;;~ set cursor bookmark directory 
+
+(use-package bookmark
+  :ensure nil
+  :config
+  (setq bookmark-default-file
+	(expand-file-name "bookmarks" user-emacs-directory))
+  )
+
+
+#+end_src
+
+**** fill comment customized commands
+
+functions related to comment:
+(comment-column)
+(comment-fill-column)
+(fill-column)
+(syntax-table)
+(comment-start)
+(comment-end)
+(comment-use-syntax)
+
+#+begin_src emacs-lisp
+;;;~ customized commit functions
+
+(use-package newcomment
+  :ensure nil
+  :config
+
+  ;;;~ 
+  (defvar ra/comment-length 60
+    "length desired for comment characters.")
+
+  (defun ra/comment-fill ()
+    "From the actual cursor position 'current-column',
+fill the rest of the line with the active comment symbol 'comment-start'."
+    (interactive)
+    (let* ((ra/comment-symbol
+	    (replace-regexp-in-string " " "" comment-start))
+	   (ra/comment-fill-column
+	    (- ra/comment-length (current-column))))
+      (insert
+       (make-string
+	ra/comment-fill-column (string-to-char ra/comment-symbol)))
+      ))
+  :bind ("C-c f" . ra/comment-fill)
+  )
+
+
+#+end_src
+
+**** fill paragraph customized commands
+
+#+begin_src emacs-lisp
+;;;~ fill paragraph customized commands
+
+(use-package fill
+  :ensure nil
+  :init
+
+  (defun unfill-paragraph (&optional region)
+    "Takes a multi-line paragraph and makes it 
+    into a single line of text."
+    (interactive (progn (barf-if-buffer-read-only) '(t)))
+    (let ((fill-column (point-max))
+	  ;;;~ This would override `fill-column' if it's an integer.
+	  (emacs-lisp-docstring-fill-column t))
+      (fill-paragraph nil region)))
+
+  (defun duplicate-current-line-or-region (arg)
+    "Duplicates the current line or region ARG times. 
+    If there's no region, the current line will be duplicated. 
+    However, if there's a region, all lines that region covers 
+    will be duplicated."
+    (interactive "p")
+    (let (beg end (origin (point)))
+      (if (and mark-active (> (point) (mark)))
+	  (exchange-point-and-mark))
+      (setq beg (line-beginning-position))
+      (if mark-active
+	  (exchange-point-and-mark))
+      (setq end (line-end-position))
+      (let ((region (buffer-substring-no-properties beg end)))
+	(dotimes (i arg)
+	  (goto-char end)
+	  (newline)
+	  (insert region)
+	  (setq end (point)))
+	(goto-char (+ origin (* (length region) arg) arg)))))
+
+  (defun move-text-internal (arg)
+    "move 'text' up/down"
+    (cond
+     ((and mark-active transient-mark-mode)
+      (if (> (point) (mark))
+	  (exchange-point-and-mark))
+      (let ((column (current-column))
+	    (text (delete-and-extract-region (point) (mark))))
+	(forward-line arg)
+	(move-to-column column t)
+	(set-mark (point))
+	(insert text)
+	(exchange-point-and-mark)
+	(setq deactivate-mark nil)))
+     (t
+      (beginning-of-line)
+      (when (or (> arg 0) (not (bobp)))
+	(forward-line)
+	(when (or (< arg 0) (not (eobp)))
+	  (transpose-lines arg))
+	(forward-line -1)))))
+
+  (defun move-text-down (arg)
+    "Move region (transient-mark-mode active) or current line
+	   arg lines down."
+    (interactive "*p")
+    (move-text-internal arg))
+
+  (defun move-text-up (arg)
+    "Move region (transient-mark-mode active) or current line
+	   arg lines up."
+    (interactive "*p")
+    (move-text-internal (- arg)))
+
+  :bind (("C-d" . duplicate-current-line-or-region)
+	 ("<f5>" . move-text-up)
+	 ("<f4>" . move-text-down)
+	 ("M-ñ M-u" . unfill-paragraph)
+	 ("M-ñ M-f" . fill-paragraph)
+	 ("<C-f8>" . compare-windows))
+  )
+#+end_src
+
+**** sh indenation
+
+#+begin_src emacs-lisp
+;;;~ sh indentation
+(use-package sh-script
+  :ensure nil
+  :config (setq sh-basic-offset 2)
+ )
+
+
+ #+end_src
+
+**** configure warnings
+
+#+begin_src emacs-lisp
+;;;~ configure warnings
+(use-package warnings
+  :ensure nil
+  :config
+  (add-to-list 'warning-suppress-types '(yasnippet backquote-change))
+  )
+
+
+#+end_src
+
+**** TODO browse url in provate mode (TODO: hotfix to default browser)
+
+#+begin_src emacs-lisp
+;;;~ browse url in provate mode
+(use-package browse-url
+  :ensure nil
+  :config
+  (setq browse-url-browser-function #'browse-url-firefox-private-mode)
+  (defun browse-url-firefox-private-mode (url &optional new-window)
+    "Ask the Firefox WWW browser to load URL in `--private-mode'.
+A remastered version of the function `browse-url-firefox'."
+    (interactive (browse-url-interactive-arg "URL: "))
+    (setq url (browse-url-encode-url url))
+    (let* ((process-environment (browse-url-process-environment)))
+      (apply #'start-process
+             (concat "firefox " url) nil
+             browse-url-firefox-program
+             (append
+              browse-url-firefox-arguments
+              ;; (if (browse-url-maybe-new-window new-window)
+	      ;; 	(if browse-url-firefox-new-window-is-tab
+	      ;; 	    '("-new-tab")
+	      ;; 	  '("-new-window")))
+	      '("-private-window")
+              (list url)))))
+  )
+
+
+#+end_src
+
+*** (3/3) THIRD PARTY PACKAGES
+
+
+#+begin_src emacs-lisp
+;;;; (3/3) THIRD PARTY PACKAGES ----------------------------
+
+
+#+end_src
+
+**** support to download global binaries required by third party packages
+
+#+begin_src emacs-lisp
+;;;~ support to download global binaries required by third party packages
+
+(use-package use-package-ensure-system-package
+  :ensure t
+  )
+
+
+#+end_src
+
+**** function to download elisp file if not prevously present
+
+#+begin_src emacs-lisp
+;;;~ function to download elisp file if not prevously present
+
+(defun download-required-elisp-file (my-file my-url)
+  "'download-required-elisp-file' is a function defined in 'init.el'
+to automatically download elisp files required for 3rd party packages.
+
+'my-file' is the directory and a file name were emacs will check for the elisp file.
+
+'my-url' is an url used only when 'my-file' is not found. In such case emacs will download the content of 'my-url' and located in 'my-file'. If the directory defined in 'my-file' is not previously present in the system, it will be automatically created (of course, when the location has the addequate user permissions).
+"
+  (let* ((my-file-name (file-name-nondirectory my-file))
+	 (my-file-dir (file-name-directory my-file)))
+    (if (file-exists-p my-file)
+	;;;~ open hide-comnt.el if exists
+	(load-file my-file)
+      ;;;~ download hide-comnt.el if not exists
+      (progn
+	(require 'url)
+	;;;~ create required directory
+	(if nil (file-directory-p my-file-dir) (mkdir my-file-dir t))
+	;;;~ download file
+	(url-copy-file my-url my-file t))))
+  )
+
+
+#+end_src
+
+**** spell correction:
+
+#+begin_src emacs-lisp
+;;;~ spell correction: 1. hooks activation
+
+(use-package flyspell
+  :ensure nil
+  :load-path "~/.emacs.d/elisp/"
+  :config
+
+  (download-required-elisp-file
+   "~/.emacs.d/elisp/flyspell.el"
+   "https://www-sop.inria.fr/members/Manuel.Serrano/flyspell/flyspell-1.7q.el")
+
+  (setq flyspell-issue-message-flag nil) ;; do not show messages when check
+  (defun flyspell-on-for-buffer-type ()
+    "Enable Flyspell appropriately for the major mode of the current buffer.  Uses `flyspell-prog-mode' for modes derived from `prog-mode', so only strings and comments get checked.  All other buffers get `flyspell-mode' to check all text.  If flyspell is already enabled, does nothing."
+    (interactive)
+    (if (not (symbol-value flyspell-mode)) ; if not already on
+	(progn
+	  (if (derived-mode-p 'prog-mode)
+	      (progn
+		(message "Flyspell on (code)")
+		(flyspell-prog-mode))
+	    ;; else
+	    (progn
+	      (message "Flyspell on (text)")
+	      (flyspell-mode 1)))
+	  ;; I tried putting (flyspell-buffer) here but it didn't seem to work
+	  )))
+  
+  (defun flyspell-toggle ()
+    "Turn Flyspell on if it is off, or off if it is on.  When turning on, it uses `flyspell-on-for-buffer-type' so code-vs-text is handled appropriately."
+    (interactive)
+    (if (symbol-value flyspell-mode)
+	(progn ; flyspell is on, turn it off
+	  (message "Flyspell off")
+	  (flyspell-mode -1))
+					; else - flyspell is off, turn it on
+      (flyspell-on-for-buffer-type)))
+
+      (global-set-key (kbd "C-c f") 'flyspell-toggle)
+  )
+
+
+#+end_src
+
+#+begin_src emacs-lisp
+;;;~ spell correction: 2. dictionaries (US, DE, en_med_glut)
+
+
+#+end_src
+
+**** syntax checking
+
+#+begin_src emacs-lisp
+;;;~ syntax checking
+;;~ check languages available and supported fot emacs+flycheck
+;;~ source: https://www.flycheck.org/en/latest/languages.html#flycheck-languages
+
+(use-package flycheck
+  :ensure t
+  ;; :init (global-flycheck-mode) ; global on is a litle bit annoying
+  :bind ("<f9>" . flycheck-mode)
+  )
+
+
+#+end_src
+
+**** jump inside text
+
+#+begin_src emacs-lisp
+;;;~ jump inside text
+
+(use-package ace-jump-mode
+  :ensure t
+  :bind ("C-z" . ace-jump-mode)
+  )
+
+
+#+end_src
+
+**** Display hexagecimal color strings with a background color
+
+#+begin_src emacs-lisp
+;;;~ Display hexagecimal color strings  with a background color
+
+(use-package rainbow-mode
+  :ensure t
+  :config
+  (add-hook 'prog-mode-hook 'rainbow-mode)
+  (add-hook 'emacs-lisp-mode-hook 'rainbow-mode))
+
+
+#+end_src
+
+**** display delimiters in color
+
+#+begin_src emacs-lisp
+;;;~ display delimiters in color
+
+(use-package rainbow-delimiters
+  :ensure t
+  :config (rainbow-delimiters-mode)
+  :hook ((emacs-lisp-mode . rainbow-delimiters-mode)
+	 ;; (org-mode . rainbow-delimiters-mode)
+	 (prog-mode . rainbow-delimiters-mode)))
+
+
+(use-package smartparens-config
+  :ensure smartparens
+  :init
+  
+  ;;;~ activate smartparens
+
+  (smartparens-global-mode)
+
+  ;;;~ toggle for sp on in all buffers
+
+  (show-smartparens-global-mode t)
+
+  ;;;~ activate smartparens in minibuffer
+
+  (add-hook 'minibuffer-setup-hook
+	    #'(lambda()(smartparens-mode 1)))
+
+  ;;;~ highlight enclosing pair of parens
+
+  (setq sp-show-pair-from-inside -1)
+
+  ;;;~ org-mode: set special characters '' __ ~~ // == just for wrapping
+
+  (sp-local-pair 'org-mode "'" nil :actions '(wrap))
+  (sp-pair "_" "_" :actions '(wrap))
+  ;; (sp-pair "~" "~" :actions '(wrap))
+  (sp-pair "/" "/" :actions '(wrap))
+  (sp-pair "=" "=" :actions '(wrap))
+
+  :bind
+  (("C-1" . sp-backward-slurp-sexp) ; pull left  delimiter lower level
+   ("C-2" . sp-backward-barf-sexp)  ; push left  delimiter upper level
+   ("C-3" . sp-forward-barf-sexp)   ; pull right delimiter lower level
+   ("C-4" . sp-forward-slurp-sexp)  ; push right delimiter upper level
+   ("C-9" . sp-rewrap-sexp)         ; pull right delimiter lower level
+   ("C-0" . sp-splice-sexp))        ; pull right delimiter lower level
+
+  :custom-face
+  (sp-show-pair-enclosing
+   ((t (:foreground "violet"))))
+  (sp-pair-overlay-face
+   ((t (:foreground "black"))))
+  (sp-show-pair-match-face
+   ((t (:weight bold :foreground "black" :background "LightCyan1"))))
+  (sp-pair-overlay-face
+   ((t (:weight bold))))
+  (sp-show-pair-match-content-face
+   ((t (:inherit nil :weight bold))))
+  (sp-show-pair-mismatch-face
+   ((t (:weight bold :foreground "#2d2d2d" :background "#f2777a"))))
+  )
+
+(use-package multiple-cursors 
+  :ensure t
+  :bind
+  (("C-S-c" . mc/edit-lines)
+   ("<C-f4>" . mc/mark-next-like-this)
+   ("<C-f5>" . mc/mark-previous-like-this)
+   ("<C-f6>" . mc/mark-all-like-this))
+  :init
+  (progn 
+    (set-face-attribute
+     `region nil
+     :foreground "white"
+     :background "RoyalBlue2"
+     :weight 'normal)
+    ;; (set-face-attribute `cursor nil :background "red")
+    ;; (setq-default cursor-type 'box);; options "box" "t" or "'hallow"
+    (setq blink-cursor-blinks 0)
+    (setq blink-cursor-interval 0.6)
+    (blink-cursor-mode))
+  :config
+  (use-package phi-search
+    :ensure t)
+  (use-package phi-search-mc
+    :ensure t)
+  )
+
+
+
+#+end_src
+
+**** show emacs keyshorcuts in minibuffer
+
+#+begin_src emacs-lisp
+;;;~ show emacs keyshorcuts in minibuffer
+
+(use-package which-key
+  :ensure t
+  :init
+  (setq which-key-idle-delay 1)
+  :config
+  (which-key-mode))
+
+
+#+end_src
+
+**** search selected region in multiple browsers: engine-mode
+
+#+begin_src emacs-lisp
+;;;~ search selected region in multiple browsers: engine-mode
+
+(use-package engine-mode
+  :ensure t
+  :config
+
+  ;;;~ Activate Minor Mode
+  
+  (engine-mode t)
+
+  (defengine dictionary
+    "https://www.dictionary.com/browse/%s"
+    :keybinding "d")
+  (defengine duckduckgo
+    "https://duckduckgo.com/?q=%s"
+    :keybinding "D")
+  (defengine leo-dictionary
+    "https://dict.leo.org/spanisch-deutsch/%s"
+    :keybinding "l")
+  (defengine deepl-trnsltr
+    "https://www.deepl.com/translator#de/es/%s"
+    :keybinding "t")
+  (defengine google-trnsltr
+    "https://translate.google.com/?sl=de&tl=es&text=%s"
+    :keybinding "T")
+  (defengine github
+    "https://github.com/search?ref=simplesearch&q=%s"
+    :keybinding "g")
+  (defengine google
+    "http://www.google.com/search?ie=utf-8&oe=utf-8&q=%s"
+    :keybinding "G")
+  (defengine youtube
+    "http://www.youtube.com/results?aq=f&oq=&search_query=%s"
+    :keybinding "y")
+  (defengine pubmed
+    "https://www.ncbi.nlm.nih.gov/pubmed/?term=%s"
+    :keybinding "p")
+  (defengine synonyms-thesaurus
+    "https://www.thesaurus.com/browse/%s?s=t"
+    :keybinding "s")
+  )
+
+
+#+end_src
+
+**** emacs REPL customization
+
+#+begin_src emacs-lisp
+;;;~ emacs REPL customization  
+
+(use-package comint                   
+  :ensure nil
+  :defer t
+  :init
+  (setq comint-scroll-to-bottom-on-input t)
+  (setq comint-scroll-to-bottom-on-output t)
+  (setq comint-move-point-for-output t))
+
+
+#+end_src
+
+**** package to improve the searching menu: helm
+
+#+begin_src emacs-lisp
+;;;~ package to improve the searching menu: helm
+
+(use-package helm
+  :ensure t
+  :defer t
+  :bind (("C-x b" . helm-buffers-list)
+	 ("C-x r b" . helm-bookmarks)
+	 ;; ("M-x" . helm-M-x)
+	 ("M-y" . helm-show-kill-ring)
+	 ;; ("C-x C-f" . helm-find-files)
+	 )
+  ;; :init
+
+  ;; (load "hide-comnt") ;; deprecated
+
+  :custom-face
+  (helm-source-header
+   ((t (:family "Ubuntu Mono"
+		:height 1.3
+		:weight bold
+		:foreground "black"
+		:background "MediumSpringGreen"))))
+  (helm-selection
+   ((t (:background "RoyalBlue"
+		    :distant-foreground "black"))))
+  :config
+
+  ;; moved from :init
+
+  ;;;~ helm mode activation
+  (helm-mode)
+  
+  ;;;~ WARNING: don't breack if hide-comnt.el not exists
+  (download-required-elisp-file
+   "~/.emacs.d/elisp/hide-comnt.el"
+   "https://www.emacswiki.org/emacs/download/hide-comnt.el")
+
+  (use-package helm-buffers
+    :ensure nil
+    :defer t
+    :custom-face
+    (helm-buffer-size
+     ((t (:foreground "cyan1"))))
+    (helm-buffer-process
+     ((t (:foreground "cyan1")))) ;MediumSpringGreen
+    (helm-non-file-buffer
+     ((t (:inherit italic :weight bold)))) ;MediumSpringGreen
+    )
+  )
+
+
+#+end_src
+
+**** improve word search and lines highlighted
+
+#+begin_src emacs-lisp
+;;;~ improve word search and lines highlighted
+
+(use-package swiper
+  ;; :ensure try
+  :ensure t
+  :defer t
+  :config
+  (ivy-mode 1)
+  (setq ivy-use-virtual-buffers t)
+  (setq enable-recursive-minibuffers t)
+  ;; enable this if you want `swiper' to use it
+  ;; (setq search-default-mode #'char-fold-to-regexp)
+  (global-set-key (kbd "C-ñ s") 'swiper)
+  (global-set-key (kbd "C-ñ r") 'swiper-backward)
+  (global-set-key (kbd "C-c C-r") 'ivy-resume)
+  ;; (global-set-key (kbd "<f6>") 'ivy-resume)
+  (global-set-key (kbd "M-x") 'counsel-M-x)
+  (global-set-key (kbd "C-x C-f") 'counsel-find-file)
+  (global-set-key (kbd "<f7> f") 'counsel-describe-function)
+  (global-set-key (kbd "<f7> v") 'counsel-describe-variable)
+  (global-set-key (kbd "<f7> o") 'counsel-describe-symbol)
+  (global-set-key (kbd "<f7> l") 'counsel-find-library)
+  (global-set-key (kbd "<f7> i") 'counsel-info-lookup-symbol)
+  (global-set-key (kbd "<f7> u") 'counsel-unicode-char)
+  (global-set-key (kbd "C-c g") 'counsel-git)
+  (global-set-key (kbd "C-c j") 'counsel-git-grep)
+  (global-set-key (kbd "C-c k") 'counsel-ag)
+  ;; (global-set-key (kbd "C-x l") 'counsel-locate)
+  ;; (global-set-key (kbd "C-S-o") 'counsel-rhythmbox)
+  ;; (define-key minibuffer-local-map (kbd "C-r") 'counsel-minibuffer-history)
+
+  ;; required by swiper
+  (use-package counsel
+    :ensure t
+    :defer t
+    )
+)
+
+
+#+end_src
+
+**** autocompletion support
+
+#+begin_src emacs-lisp
+;;;~ autocompletion support
+
+(use-package auto-complete
+  :ensure t
+  :defer t
+  :init
+  ;; don't break if not installed 
+  (when (require 'auto-complete-config nil 'noerror) 
+    (add-to-list 'ac-dictionary-directories 
+		 (expand-file-name "ac-dict" user-emacs-directory))
+    (setq ac-comphist-file
+	  (expand-file-name "ac-comphist.dat" user-emacs-directory))
+    (ac-config-default))
+  (load "auto-complete-config")
+  ;; (progn
+  ;;   (ac-config-default)
+  ;;   (global-auto-complete-mode t)
+  ;;   )
+  )
+
+
+#+end_src
+
+**** git support
+
+#+begin_src emacs-lisp
+;;;~ git emacs
+
+(use-package magit
+  :ensure t
+  :config
+  (setq magit-view-git-manual-method 'man)
+  :bind ("C-x g" . magit-status)
+  )
+
+
+#+end_src
+
+**** rstatistics support
+
+#+begin_src emacs-lisp
+;;;~ rstatistics support
+
+(use-package ess
+  :ensure t
+  :init (require 'ess-site)
+  )
+
+
+#+end_src
+
+**** python support
+
+#+begin_src emacs-lisp
+;;;~ support to use multiple python versions
+
+(use-package pyenv-mode
+  :ensure t
+  )
+
+
+#+end_src
+
+
+module rewritted to support macos
+#+begin_src emacs-lisp
+	;;;~ support for python virtual environments
+
+	(use-package virtualenvwrapper
+	  :ensure t
+	  ;; :ensure-system-package
+	  ;; (virtualenvwrapper . "pip install virtualenvwrapper")
+	  :init
+	  ;;;~ set path
+	  (cond ((eq system-type 'gnu/linux)
+		 (setenv "PATH"
+			 (concat (getenv "PATH") ":" (getenv "HOME") "/.local/bin"))
+		 (setq exec-path
+		       (append exec-path
+			       `(,(concat (getenv "HOME") "/.local/bin")))))
+  ((eq system-type 'darwin)
+	     (setenv "PATH"
+		     (concat (getenv "PATH") ":" (getenv "HOME") "/usr/local/bin"))
+	     (setq exec-path
+		   (append exec-path
+			   `(,(concat (getenv "HOME") "/usr/local/bin")))))
+		)
+	  ;;;~ set python virtual environments location
+	  (setq venv-location "~/.virtualenvs")
+	  ;;;~ custom functions for python virtual environment creation
+	  ;; (defcustom emacs-python-venv-required-packages '("epc" "jedi" "pytz")
+	    ;; "required packages for Emacs to work with a python virtual environment")
+	  :config
+	  (setq-default python-indent-offset 2) ;4 (deprecated 2021-01-21)
+	  ;; set python guess indent
+	  (setq python-indent-guess-indent-offset t)
+	  ;; silence the warning of python guess indent
+	  (setq python-indent-guess-indent-offset-verbose nil)
+	  ;; if you want interactive shell support
+	  (venv-initialize-interactive-shells)
+	  ;; if you want eshell support
+	  (venv-initialize-eshell)
+	  (setq python-shell-completion-native-enable nil)
+	  )
+
+
+#+end_src
+
+#+begin_src emacs-lisp
+;;;~ python auto-completiom
+
+(use-package jedi-core
+  :ensure t
+  ;; :config
+  ;; (setq python-environment-directory "~/.virtualenvs")
+  )
+
+
+(use-package jedi
+  :ensure t
+  :config
+  (add-hook 'python-mode 'jedi:ac-setup)
+  (setq jedi:complete-on-dot t)
+  (setq python-environment-directory "~/.virtualenvs")
+  )
+
+
+#+end_src
+
+**** lua support
+
+#+begin_src emacs-lisp
+;;;~ lua support
+
+(use-package lua-mode
+  :ensure t)
+#+end_src
+
+**** emacs snippets
+
+#+begin_src emacs-lisp :tangle no
+  ;;;~ emacs snippets
+
+  (use-package yasnippet
+    :ensure t
+    :hook ((prog-mode . yas-minor-mode)
+	   (org-mode . yas-minor-mode))
+
+    ;;;~ 1. use pre-build snippets collection
+    ;; :ensure yasnippet-snippets
+
+    ;;;~ 2. download custom snippets from github
+    ;; :ensure-system-package
+    ;; (
+    ;;  ;; create source folder "snippets" if it do not exists
+    ;;  ("~/Projects/snippets/README.org" .
+    ;;   "git clone https://github.com/raom2004/snippets $HOME/Projects/snippets")
+    ;;  ;; create a symbolic link to source folder if it do not exists 
+    ;;  ("~/.emacs.d/snippets/README.org" .
+    ;;   "rm -d ~/.emacs.d/snippets && ln -s ~/Projects/snippets ~/.emacs.d/snippets")
+    ;;   ;; "rm -d ~/.emacs.d/snippets && ln -s ~/Projects/snippets $_")
+    ;;  )
+
+    :init
+    ;;;~ use custom snippets collection
+    (cond ((equal system-type 'darwin)
+	   (setq yas-snippet-dirs
+		 `(,(expand-file-name "Projects/snippets"
+				      user-emacs-directory))))
+	  ((equal system-type 'linux)
+	   (setq yas-snippet-dirs
+		 `(,(expand-file-name "snippets"
+				      user-emacs-directory))))
+	  )
+
+    (setq yas-indent-line 'none)
+
+    :config
+    ;; TODO: rewrite the ensure-system-package to work with macos
+    ;; (cond ;;((equal system-type 'darwin)
+    ;; 	((equal system-type 'linux)
+    ;; 	)
+
+    ;; (when (not (file-directory-p (expand-file-name "plugins/yasnippet" user-emacs-directory)))
+    ;; (shell-command-as-string
+    ;;  "cd ~/.emacs.d/plugins | git clone --recursive https://github.com/joaotavora/yasnippet"))
+    (yas-reload-all)
+    ;; (yas-global-mode)
+    ;; :bind (:map yas-minor-mode-map
+    ;; 		("TAB" . nil)
+    ;; 		("<tab>" . nil))
+
+    :bind  ("<C-f12>" . yas-minor-mode)
+    )
+
+#+end_src
+
+**** pandoc
+
+source: https://github.com/emacsorphanage/ox-pandoc
+
+#+begin_src emacs-lisp :tangle no
+;;;~ support for pandoc
+
+(use-package ox-pandoc
+  :ensure t
+  :init
+  (cond ((equal system-type 'darwin)
+	 (add-to-list 'exec-path "/usr/local/bin")
+	 ))
+  ;; default options for all output formats
+  (setq org-pandoc-options '((standalone . t)))
+  ;; cancel above settings only for 'docx' format
+  ;; (setq org-pandoc-options-for-docx '((standalone . nil)))
+  ;; special settings for beamer-pdf and latex-pdf exporters
+  ;; (setq org-pandoc-options-for-beamer-pdf '((pdf-engine . "xelatex")))
+  ;; (setq org-pandoc-options-for-latex-pdf '((pdf-engine . "pdflatex")))
+  ;; special extensions for markdown_github output
+  ;; (setq org-pandoc-format-extensions
+	;; '(markdown_github+pipe_tables+raw_html))
+
+  )
+
+
+#+end_src
+
+**** org global customization
+
+#+begin_src emacs-lisp
+;;;~ org global customization
+
+(use-package org
+  :init
+  ;;~ required to resize images (inline) in org mode
+  ;;~ using the tag: "#~ATTR_ORG: :width 500px" in px or
+  ;;~                "#~ATTR_HTML: :width 50%" in %
+  ;;~ source: https://orgmode.org/manual/Images.html
+  (setq org-image-actual-width nil)
+  :defer t
+  :bind (("C-c a" . org-agenda)
+	 ("C-c c" . org-capture)
+	 ("C-c l" . org-store-link)
+	 )
+
+  :config
+
+  ;;;~ functions to update fields in org files (/Projects/dot-emacs/src-org)
+
+  (defun ra/find-replace (from to)
+    "Find and replase string. It supports 'regexpr'."
+    (interactive)
+    (save-excursion
+      (beginning-of-buffer)
+      (while (re-search-forward from nil t)
+        (replace-match to t))))
+
+  (defun ra/org-update-updated ()
+    (interactive)
+    "Update field: 'Updated' in org buffer"
+    (ra/find-replace
+     "\\(^;; Updated: \\)\\(.*\\)"
+     (format-time-string "\\1%Y-%m-%d %H:%M:%S")))
+
+  (defun ra/org-update-source ()
+    (interactive)
+    "Update field: 'Source' in org buffer"
+    (ra/find-replace
+     "\\(^;; Source: \\)\\(.*\\)"
+     (format "\\1%s"(file-name-nondirectory (buffer-file-name)))))
+
+  (defun ra/src-org-update-fields ()
+    (interactive)
+    "Update fields 'Updated' (last modified) and 'Source' (org file) before save org files in '/home/angel/Projects/dot-emacs/src-org/' "
+    (when
+	(and (derived-mode-p 'org-mode)
+	     (string-equal (file-name-directory (buffer-file-name))
+			   "/home/angel/Projects/dot-emacs/src-org/"))
+      (ra/org-update-updated)
+      (ra/org-update-source)))
+
+  ;;;~ fix character ^M in babel block results 
+  ;;;~ functions to update fields in org files (/Projects/dot-emacs/src-org)
+  ;;;~  source: https://emacs.stackexchange.com/questions/28871/how-to-remove-m-from-org-babel-code-block-executing-on-linux-from-windows-os
+
+  (defadvice org-babel-sh-evaluate (around set-shell activate)
+    "Add header argument :file-coding that sets the buffer-file-coding-system."
+    (let ((file-coding-param (cdr (assoc :file-coding params))))
+      (if file-coding-param
+          (let ((file-coding (intern file-coding-param))
+		(default-file-coding (default-value 'buffer-file-coding-system)))
+            (setq-default buffer-file-coding-system file-coding)
+            ad-do-it
+            (setq-default buffer-file-coding-system default-file-coding))
+	ad-do-it)))
+
+  ;; add support for term in org babel (source:sacha chua, 2020-09-20)
+  ;; Little snippet to run command in term instead of inserting in region
+
+  (defadvice org-babel-execute:sh (around sacha activate)
+    (if (assoc-default :term (ad-get-arg 1) nil)
+	(let* ((path
+		(cond ((equal system-type 'darwin) "/bin/")
+		      ((equal system-type 'gnu/linux) "/usr/bin/")))
+	       (buffer (make-term "sh-babel" (concat path "sh")))
+	      )
+	  (with-current-buffer buffer
+            (insert (org-babel-expand-body:generic
+		     body params
+		     (org-babel-variable-assignments:sh params)))
+            (term-send-input))
+	  (pop-to-buffer buffer)
+	  ;; (term-char-mode)
+	  ;; (read-only-mode nil)
+	  ;; (set (make-local-variable 'face-remapping-alist)
+	       ;; '((default :background "gray10")))
+	  (other-window -1))
+      ad-do-it))
+  
+  (defadvice org-babel-execute:bash (around sacha activate)
+    (if (assoc-default :term (ad-get-arg 1) nil)
+	(let* ((path
+		(cond ((equal system-type 'darwin) "/bin/")
+		      ((equal system-type 'gnu/linux) "/usr/bin/")))
+	       (buffer (make-term "bash-babel"
+				  (concat path "bash"))))
+	  (with-current-buffer buffer
+            (insert (org-babel-expand-body:generic
+		     body params
+		     (org-babel-variable-assignments:bash params)))
+            (term-send-input))
+	  (pop-to-buffer buffer)
+	  ;; (term-char-mode)
+	  ;; (read-only-mode nil)
+	  (other-window -1))
+      ad-do-it))
+
+  (defadvice org-babel-execute:python (around sacha activate)
+    (if (assoc-default :term (ad-get-arg 1) nil)
+	(let* ((path
+		(cond ((equal system-type 'darwin) "/usr/local/bin/")
+		      ((equal system-type 'gnu/linux) "/usr/bin/")))
+	      (buffer (make-term "python-babel"
+				 (concat path "python"))))
+	  (with-current-buffer buffer
+            (insert (org-babel-expand-body:generic
+		     body params
+		     (org-babel-variable-assignments:python params)))
+            (term-send-input))
+	  (pop-to-buffer buffer)
+	  ;; (term-char-mode)
+	  ;; (read-only-mode nil)
+	  ;; (set (make-local-variable 'face-remapping-alist)
+	       ;; '((default :background "gray10")))
+	  (other-window -1))
+      ad-do-it))
+
+  ;; TODO Org Mode Babel - Interactive code block evaluation
+  ;; source:
+  ;; https://emacs.stackexchange.com/questions/15065/org-mode-babel-interactive-code-block-evaluation
+
+  ;; :config
+
+  ;;;~ hook to update fields in org files (/Projects/dot-emacs/src-org)
+
+  (add-hook 'org-mode-hook
+	    #'(lambda()
+		(add-hook
+		 'write-contents-functions 'ra/src-org-update-fields)) nil)
+  
+  ;;;~ set path to org directory
+  (setq org-directory
+        (expand-file-name "../Documents/org" user-emacs-directory))
+  ;;;~ set path to org files
+  (setq org-agenda-files
+	(expand-file-name "../Documents/org/todo.org" user-emacs-directory))
+  (setq org-default-notes-file
+	(expand-file-name "../Projects/notes/notes.org" user-emacs-directory))
+  ;;;~ set persistent org mode clock in history
+  (setq org-clock-persist 'history)
+  (setq org-clock-persist-file
+	(expand-file-name "../config/org-clock-save.org" user-emacs-directory))
+  
+  ;;;~ org basic customizations
+  (setq org-adapt-indentation nil) 
+  (setq org-confirm-babel-evaluate nil)
+  (setq org-confirm-elisp-link-function nil)
+  ;; (setq org-hide-emphasis-markers t) ;; hide markers: // ** == 
+  (setq org-tags-column -66) 
+
+  ;;;~ org babel customization
+
+  (setq org-src-fontify-natively t) 
+  (setq org-src-preserve-indentation t)  ;; do not indent code blocks
+  (setq org-src-window-setup 'current-window) ;; eval in new frame
+
+  ;;;~ open link in new window 
+
+  (setq org-link-frame-setup
+	'((vm . vm-visit-folder-other-frame)
+	  (vm-imap . vm-visit-imap-folder-other-frame)
+	  (gnus . org-gnus-no-new-news)
+	  (file . find-file)                 ;open link in new window  
+	  ;; (file . find-file-other-window) ;open link in new window  
+	  ;; (file . find-file-other-frame)  ;open link in new frame
+	  (wl . wl-other-frame)))
+
+    ;;;~ org custom templates
+
+  (setq org-structure-template-alist
+	'(
+	    ;;;~ text bloques
+	  ("E" . "example")
+	  ("M" . "comment")
+	  ("N" . "notes")
+	  ("Q" . "quote")
+	    ;;;~ markup bloques
+	  ("a" . "export ascii")
+	  ("h" . "export html")
+	  ("l" . "export latex")
+	  ("x" . "export xml")
+	    ;;;~ code bloques
+	  ("0" . "src")
+	  ("c" . "src C")
+	  ("e" . "src emacs-lisp")
+	  ("s" . "src shell")
+	  ("b" . "src bash")
+	  ("p" . "src python")
+	  ;; ("s" . "src shell :results verbatim")
+	  ;; ("b" . "src bash :results verbatim")
+	  ;; ("p" . "src python :results output")
+	  )
+	)	
+
+    ;;;~ org add template
+  
+  (add-to-list
+   'org-structure-template-alist
+   '("B" .
+     "src bash :results verbatim :dir \"/sudo::/\" :wrap src bash")
+   t				;added at the end
+   )
+
+  (add-to-list
+   'org-structure-template-alist
+   '("P" .
+     "src python :session python-session :results output :preamble (venv-workon \"biopython\")")
+   t				;added at the end
+   )
+
+    ;;;~ org load babel languages
+
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '(
+     (C          . t) ;; C, C++
+     (R          . t)
+     ;; (clojure    . t)
+     ;; (ditaa      . t)
+     ;; (dot        . t) ;; graphviz-dot-mode
+     (emacs-lisp . t)
+     ;; (haskell    . t)
+     ;; (js         . t)
+     (latex      . t)
+     (lua      . t)
+     (org        . t)
+     ;; (prolog     . t)
+     (python     . t)
+     ;; (sh         . t)
+     (shell      . t)
+     ;; (sql        . t)
+     ;; (sqlite     . t)
+     ))
+
+  ;; perl support
+  
+  (require 'ob-perl)
+  
+  (use-package gnuplot
+    :ensure t
+    )
+
+  (use-package gnuplot-mode
+    :ensure t
+    )
+
+  ); end -- org --
+
+
+#+end_src
+
+**** emacs start server mode (if not started previously)
+
+#+begin_src emacs-lisp
+;;;~ emacs start server mode (if not started previously)
+
+(use-package server
+  :ensure nil
+  :config
+  (unless (server-running-p)
+    (server-start))
+  )
+
+
+#+end_src
 
