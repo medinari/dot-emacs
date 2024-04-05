@@ -566,6 +566,9 @@ A reference of the list options available, can be found here
 	  ((equal system-type 'linux)
 	   (add-to-list 'initial-frame-alist '(font . "Ubuntu Mono-11"))
 	   (add-to-list 'default-frame-alist '(font . "Ubuntu Mono-11")))
+	  ((equal system-type 'windows-nt)
+	   (add-to-list 'initial-frame-alist '(font . "Consolas 12"))
+	   (add-to-list 'default-frame-alist '(font . "Consolas 12")))
 	  )
     
     (defun modify-frame-location-upper-left () 
