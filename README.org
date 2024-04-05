@@ -1,4 +1,4 @@
-#+PROPERTY: header-args :tangle init-essentials.el
+#+PROPERTY: header-args :tangle init.el
 
 # dot-emacs
 This init file include all the customization that emacs require to support for literate programming in python and r-statistics
@@ -878,7 +878,7 @@ fill the rest of the line with the active comment symbol 'comment-start'."
 
 **** TODO browse url in provate mode (TODO: hotfix to default browser)
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 ;;;~ browse url in provate mode
 (use-package browse-url
   :ensure nil
@@ -903,6 +903,23 @@ A remastered version of the function `browse-url-firefox'."
               (list url)))))
   )
 
+
+#+end_src
+
+**** python
+
+#+begin_src emacs-lisp :tangle no
+  ;; python built-in config
+  (use-package python
+    :ensure nil
+    :config
+    (setq python-shell-interpreter "python3"
+	  ;; python-shell-interpreter-args "--simple-prompt"
+	  )
+    ;; (setq python-shell-interpreter "/usr/local/bin/python3"
+    ;; 	  python-shell-interpreter-args "--simple-prompt"
+    ;; 	  )
+    )
 
 #+end_src
 
@@ -1033,6 +1050,14 @@ to automatically download elisp files required for 3rd party packages.
 
 (use-package ace-jump-mode
   :ensure t
+  :config
+  (setq ace-jump-mode-submode-list
+	'(
+	  ace-jump-word-mode
+	  ace-jump-char-mode
+	  ace-jump-line-mode
+	  )
+	)
   :bind ("C-z" . ace-jump-mode)
   )
 
@@ -1559,263 +1584,275 @@ source: https://github.com/emacsorphanage/ox-pandoc
 **** org global customization
 
 #+begin_src emacs-lisp
-;;;~ org global customization
+  ;;;~ org global customization
 
-(use-package org
-  :init
-  ;;~ required to resize images (inline) in org mode
-  ;;~ using the tag: "#~ATTR_ORG: :width 500px" in px or
-  ;;~                "#~ATTR_HTML: :width 50%" in %
-  ;;~ source: https://orgmode.org/manual/Images.html
-  (setq org-image-actual-width nil)
-  :defer t
-  :bind (("C-c a" . org-agenda)
-	 ("C-c c" . org-capture)
-	 ("C-c l" . org-store-link)
-	 )
+  (use-package org
+    :init
+    ;;~ required to resize images (inline) in org mode
+    ;;~ using the tag: "#~ATTR_ORG: :width 500px" in px or
+    ;;~                "#~ATTR_HTML: :width 50%" in %
+    ;;~ source: https://orgmode.org/manual/Images.html
+    (setq org-image-actual-width nil)
+    ;; (setq org-babel-python-command "python3")
+    ;; (cond ((equal system-type 'darwin)
+    ;; 	 (setq org-babel-python-command "/usr/local/bin/python3"))
+    ;; 	((equal system-type 'gnu/linux)
+    ;; 	 (setq org-babel-python-command "python"))
+    ;; 	)
+    :defer t
+    :bind (("C-c a" . org-agenda)
+	   ("C-c c" . org-capture)
+	   ("C-c l" . org-store-link)
+	   )
 
-  :config
+    :config
 
-  ;;;~ functions to update fields in org files (/Projects/dot-emacs/src-org)
+    ;;;~ functions to update fields in org files (/Projects/dot-emacs/src-org)
 
-  (defun ra/find-replace (from to)
-    "Find and replase string. It supports 'regexpr'."
-    (interactive)
-    (save-excursion
-      (beginning-of-buffer)
-      (while (re-search-forward from nil t)
-        (replace-match to t))))
+    (defun ra/find-replace (from to)
+      "Find and replase string. It supports 'regexpr'."
+      (interactive)
+      (save-excursion
+	(beginning-of-buffer)
+	(while (re-search-forward from nil t)
+	  (replace-match to t))))
 
-  (defun ra/org-update-updated ()
-    (interactive)
-    "Update field: 'Updated' in org buffer"
-    (ra/find-replace
-     "\\(^;; Updated: \\)\\(.*\\)"
-     (format-time-string "\\1%Y-%m-%d %H:%M:%S")))
+    (defun ra/org-update-updated ()
+      (interactive)
+      "Update field: 'Updated' in org buffer"
+      (ra/find-replace
+       "\\(^;; Updated: \\)\\(.*\\)"
+       (format-time-string "\\1%Y-%m-%d %H:%M:%S")))
 
-  (defun ra/org-update-source ()
-    (interactive)
-    "Update field: 'Source' in org buffer"
-    (ra/find-replace
-     "\\(^;; Source: \\)\\(.*\\)"
-     (format "\\1%s"(file-name-nondirectory (buffer-file-name)))))
+    (defun ra/org-update-source ()
+      (interactive)
+      "Update field: 'Source' in org buffer"
+      (ra/find-replace
+       "\\(^;; Source: \\)\\(.*\\)"
+       (format "\\1%s"(file-name-nondirectory (buffer-file-name)))))
 
-  (defun ra/src-org-update-fields ()
-    (interactive)
-    "Update fields 'Updated' (last modified) and 'Source' (org file) before save org files in '/home/angel/Projects/dot-emacs/src-org/' "
-    (when
-	(and (derived-mode-p 'org-mode)
-	     (string-equal (file-name-directory (buffer-file-name))
-			   "/home/angel/Projects/dot-emacs/src-org/"))
-      (ra/org-update-updated)
-      (ra/org-update-source)))
+    (defun ra/src-org-update-fields ()
+      (interactive)
+      "Update fields 'Updated' (last modified) and 'Source' (org file) before save org files in '/home/angel/Projects/dot-emacs/src-org/' "
+      (when
+	  (and (derived-mode-p 'org-mode)
+	       (string-equal (file-name-directory (buffer-file-name))
+			     "/home/angel/Projects/dot-emacs/src-org/"))
+	(ra/org-update-updated)
+	(ra/org-update-source)))
 
-  ;;;~ fix character ^M in babel block results 
-  ;;;~ functions to update fields in org files (/Projects/dot-emacs/src-org)
-  ;;;~  source: https://emacs.stackexchange.com/questions/28871/how-to-remove-m-from-org-babel-code-block-executing-on-linux-from-windows-os
+    ;;;~ fix character ^M in babel block results 
+    ;;;~ functions to update fields in org files (/Projects/dot-emacs/src-org)
+    ;;;~  source: https://emacs.stackexchange.com/questions/28871/how-to-remove-m-from-org-babel-code-block-executing-on-linux-from-windows-os
 
-  (defadvice org-babel-sh-evaluate (around set-shell activate)
-    "Add header argument :file-coding that sets the buffer-file-coding-system."
-    (let ((file-coding-param (cdr (assoc :file-coding params))))
-      (if file-coding-param
-          (let ((file-coding (intern file-coding-param))
-		(default-file-coding (default-value 'buffer-file-coding-system)))
-            (setq-default buffer-file-coding-system file-coding)
-            ad-do-it
-            (setq-default buffer-file-coding-system default-file-coding))
-	ad-do-it)))
+    (defadvice org-babel-sh-evaluate (around set-shell activate)
+      "Add header argument :file-coding that sets the buffer-file-coding-system."
+      (let ((file-coding-param (cdr (assoc :file-coding params))))
+	(if file-coding-param
+	    (let ((file-coding (intern file-coding-param))
+		  (default-file-coding (default-value 'buffer-file-coding-system)))
+	      (setq-default buffer-file-coding-system file-coding)
+	      ad-do-it
+	      (setq-default buffer-file-coding-system default-file-coding))
+	  ad-do-it)))
 
-  ;; add support for term in org babel (source:sacha chua, 2020-09-20)
-  ;; Little snippet to run command in term instead of inserting in region
+    ;; add support for term in org babel (source:sacha chua, 2020-09-20)
+    ;; Little snippet to run command in term instead of inserting in region
 
-  (defadvice org-babel-execute:sh (around sacha activate)
-    (if (assoc-default :term (ad-get-arg 1) nil)
-	(let* ((path
-		(cond ((equal system-type 'darwin) "/bin/")
-		      ((equal system-type 'gnu/linux) "/usr/bin/")))
-	       (buffer (make-term "sh-babel" (concat path "sh")))
-	      )
-	  (with-current-buffer buffer
-            (insert (org-babel-expand-body:generic
-		     body params
-		     (org-babel-variable-assignments:sh params)))
-            (term-send-input))
-	  (pop-to-buffer buffer)
-	  ;; (term-char-mode)
-	  ;; (read-only-mode nil)
-	  ;; (set (make-local-variable 'face-remapping-alist)
-	       ;; '((default :background "gray10")))
-	  (other-window -1))
-      ad-do-it))
+    (defadvice org-babel-execute:sh (around sacha activate)
+      (if (assoc-default :term (ad-get-arg 1) nil)
+	  (let* ((path
+		  (cond ((equal system-type 'darwin) "/bin/")
+			((equal system-type 'gnu/linux) "/usr/bin/")))
+		 (buffer (make-term "sh-babel" (concat path "sh")))
+		)
+	    (with-current-buffer buffer
+	      (insert (org-babel-expand-body:generic
+		       body params
+		       (org-babel-variable-assignments:sh params)))
+	      (term-send-input))
+	    (pop-to-buffer buffer)
+	    ;; (term-char-mode)
+	    ;; (read-only-mode nil)
+	    ;; (set (make-local-variable 'face-remapping-alist)
+		 ;; '((default :background "gray10")))
+	    (other-window -1))
+	ad-do-it))
   
-  (defadvice org-babel-execute:bash (around sacha activate)
-    (if (assoc-default :term (ad-get-arg 1) nil)
-	(let* ((path
-		(cond ((equal system-type 'darwin) "/bin/")
-		      ((equal system-type 'gnu/linux) "/usr/bin/")))
-	       (buffer (make-term "bash-babel"
-				  (concat path "bash"))))
-	  (with-current-buffer buffer
-            (insert (org-babel-expand-body:generic
-		     body params
-		     (org-babel-variable-assignments:bash params)))
-            (term-send-input))
-	  (pop-to-buffer buffer)
-	  ;; (term-char-mode)
-	  ;; (read-only-mode nil)
-	  (other-window -1))
-      ad-do-it))
+    (defadvice org-babel-execute:bash (around sacha activate)
+      (if (assoc-default :term (ad-get-arg 1) nil)
+	  (let* ((path
+		  (cond ((equal system-type 'darwin) "/bin/")
+			((equal system-type 'gnu/linux) "/usr/bin/")))
+		 (buffer (make-term "bash-babel"
+				    (concat path "bash"))))
+	    (with-current-buffer buffer
+	      (insert (org-babel-expand-body:generic
+		       body params
+		       (org-babel-variable-assignments:bash params)))
+	      (term-send-input))
+	    (pop-to-buffer buffer)
+	    ;; (term-char-mode)
+	    ;; (read-only-mode nil)
+	    (other-window -1))
+	ad-do-it))
 
-  (defadvice org-babel-execute:python (around sacha activate)
-    (if (assoc-default :term (ad-get-arg 1) nil)
-	(let* ((path
-		(cond ((equal system-type 'darwin) "/usr/local/bin/")
-		      ((equal system-type 'gnu/linux) "/usr/bin/")))
-	      (buffer (make-term "python-babel"
-				 (concat path "python"))))
-	  (with-current-buffer buffer
-            (insert (org-babel-expand-body:generic
-		     body params
-		     (org-babel-variable-assignments:python params)))
-            (term-send-input))
-	  (pop-to-buffer buffer)
-	  ;; (term-char-mode)
-	  ;; (read-only-mode nil)
-	  ;; (set (make-local-variable 'face-remapping-alist)
-	       ;; '((default :background "gray10")))
-	  (other-window -1))
-      ad-do-it))
+    (defadvice org-babel-execute:python (around sacha activate)
+      (if (assoc-default :term (ad-get-arg 1) nil)
+	  (let* ((path
+		  (cond ((equal system-type 'darwin) "/usr/local/bin/")
+			((equal system-type 'gnu/linux) "/usr/bin/")))
+		(buffer (make-term "python-babel" python-shell-interpreter))
+		)
+		;; (buffer (make-term "python-babel"
+		;; 		   (concat path org-babel-python-command)))
+		;; 		   )
+		;; (buffer (make-term "python-babel"
+		;; 		   (concat path python-shell-interpreter)))
+		;; 		   )
+	    (with-current-buffer buffer
+	      (insert (org-babel-expand-body:generic
+		       body params
+		       (org-babel-variable-assignments:python params)))
+	      (term-send-input))
+	    (pop-to-buffer buffer)
+	    ;; (term-char-mode)
+	    ;; (read-only-mode nil)
+	    ;; (set (make-local-variable 'face-remapping-alist)
+		 ;; '((default :background "gray10")))
+	    (other-window -1))
+	ad-do-it))
 
-  ;; TODO Org Mode Babel - Interactive code block evaluation
-  ;; source:
-  ;; https://emacs.stackexchange.com/questions/15065/org-mode-babel-interactive-code-block-evaluation
+    ;; TODO Org Mode Babel - Interactive code block evaluation
+    ;; source:
+    ;; https://emacs.stackexchange.com/questions/15065/org-mode-babel-interactive-code-block-evaluation
 
-  ;; :config
+    ;; :config
 
-  ;;;~ hook to update fields in org files (/Projects/dot-emacs/src-org)
+    ;;;~ hook to update fields in org files (/Projects/dot-emacs/src-org)
 
-  (add-hook 'org-mode-hook
-	    #'(lambda()
-		(add-hook
-		 'write-contents-functions 'ra/src-org-update-fields)) nil)
+    (add-hook 'org-mode-hook
+	      #'(lambda()
+		  (add-hook
+		   'write-contents-functions 'ra/src-org-update-fields)) nil)
   
-  ;;;~ set path to org directory
-  (setq org-directory
-        (expand-file-name "../Documents/org" user-emacs-directory))
-  ;;;~ set path to org files
-  (setq org-agenda-files
-	(expand-file-name "../Documents/org/todo.org" user-emacs-directory))
-  (setq org-default-notes-file
-	(expand-file-name "../Projects/notes/notes.org" user-emacs-directory))
-  ;;;~ set persistent org mode clock in history
-  (setq org-clock-persist 'history)
-  (setq org-clock-persist-file
-	(expand-file-name "../config/org-clock-save.org" user-emacs-directory))
+    ;;;~ set path to org directory
+    (setq org-directory
+	  (expand-file-name "../Documents/org" user-emacs-directory))
+    ;;;~ set path to org files
+    (setq org-agenda-files
+	  (expand-file-name "../Documents/org/todo.org" user-emacs-directory))
+    (setq org-default-notes-file
+	  (expand-file-name "../Projects/notes/notes.org" user-emacs-directory))
+    ;;;~ set persistent org mode clock in history
+    (setq org-clock-persist 'history)
+    (setq org-clock-persist-file
+	  (expand-file-name "../config/org-clock-save.org" user-emacs-directory))
   
-  ;;;~ org basic customizations
-  (setq org-adapt-indentation nil) 
-  (setq org-confirm-babel-evaluate nil)
-  (setq org-confirm-elisp-link-function nil)
-  ;; (setq org-hide-emphasis-markers t) ;; hide markers: // ** == 
-  (setq org-tags-column -66) 
+    ;;;~ org basic customizations
+    (setq org-adapt-indentation nil) 
+    (setq org-confirm-babel-evaluate nil)
+    (setq org-confirm-elisp-link-function nil)
+    ;; (setq org-hide-emphasis-markers t) ;; hide markers: // ** == 
+    (setq org-tags-column -66) 
 
-  ;;;~ org babel customization
+    ;;;~ org babel customization
 
-  (setq org-src-fontify-natively t) 
-  (setq org-src-preserve-indentation t)  ;; do not indent code blocks
-  (setq org-src-window-setup 'current-window) ;; eval in new frame
+    (setq org-src-fontify-natively t) 
+    (setq org-src-preserve-indentation t)  ;; do not indent code blocks
+    (setq org-src-window-setup 'current-window) ;; eval in new frame
 
-  ;;;~ open link in new window 
+    ;;;~ open link in new window 
 
-  (setq org-link-frame-setup
-	'((vm . vm-visit-folder-other-frame)
-	  (vm-imap . vm-visit-imap-folder-other-frame)
-	  (gnus . org-gnus-no-new-news)
-	  (file . find-file)                 ;open link in new window  
-	  ;; (file . find-file-other-window) ;open link in new window  
-	  ;; (file . find-file-other-frame)  ;open link in new frame
-	  (wl . wl-other-frame)))
+    (setq org-link-frame-setup
+	  '((vm . vm-visit-folder-other-frame)
+	    (vm-imap . vm-visit-imap-folder-other-frame)
+	    (gnus . org-gnus-no-new-news)
+	    (file . find-file)                 ;open link in new window  
+	    ;; (file . find-file-other-window) ;open link in new window  
+	    ;; (file . find-file-other-frame)  ;open link in new frame
+	    (wl . wl-other-frame)))
 
-    ;;;~ org custom templates
+      ;;;~ org custom templates
 
-  (setq org-structure-template-alist
-	'(
-	    ;;;~ text bloques
-	  ("E" . "example")
-	  ("M" . "comment")
-	  ("N" . "notes")
-	  ("Q" . "quote")
-	    ;;;~ markup bloques
-	  ("a" . "export ascii")
-	  ("h" . "export html")
-	  ("l" . "export latex")
-	  ("x" . "export xml")
-	    ;;;~ code bloques
-	  ("0" . "src")
-	  ("c" . "src C")
-	  ("e" . "src emacs-lisp")
-	  ("s" . "src shell")
-	  ("b" . "src bash")
-	  ("p" . "src python")
-	  ;; ("s" . "src shell :results verbatim")
-	  ;; ("b" . "src bash :results verbatim")
-	  ;; ("p" . "src python :results output")
-	  )
-	)	
+    (setq org-structure-template-alist
+	  '(
+	      ;;;~ text bloques
+	    ("E" . "example")
+	    ("M" . "comment")
+	    ("N" . "notes")
+	    ("Q" . "quote")
+	      ;;;~ markup bloques
+	    ("a" . "export ascii")
+	    ("h" . "export html")
+	    ("l" . "export latex")
+	    ("x" . "export xml")
+	      ;;;~ code bloques
+	    ("0" . "src")
+	    ("c" . "src C")
+	    ("e" . "src emacs-lisp")
+	    ("s" . "src shell")
+	    ("b" . "src bash")
+	    ("p" . "src python")
+	    ;; ("s" . "src shell :results verbatim")
+	    ;; ("b" . "src bash :results verbatim")
+	    ;; ("p" . "src python :results output")
+	    )
+	  )	
 
-    ;;;~ org add template
+      ;;;~ org add template
   
-  (add-to-list
-   'org-structure-template-alist
-   '("B" .
-     "src bash :results verbatim :dir \"/sudo::/\" :wrap src bash")
-   t				;added at the end
-   )
+    (add-to-list
+     'org-structure-template-alist
+     '("B" .
+       "src bash :results verbatim :dir \"/sudo::/\" :wrap src bash")
+     t				;added at the end
+     )
 
-  (add-to-list
-   'org-structure-template-alist
-   '("P" .
-     "src python :session python-session :results output :preamble (venv-workon \"biopython\")")
-   t				;added at the end
-   )
+    (add-to-list
+     'org-structure-template-alist
+     '("P" .
+       "src python :session python-session :results output :preamble (venv-workon \"biopython\")")
+     t				;added at the end
+     )
 
-    ;;;~ org load babel languages
+      ;;;~ org load babel languages
 
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '(
-     (C          . t) ;; C, C++
-     (R          . t)
-     ;; (clojure    . t)
-     ;; (ditaa      . t)
-     ;; (dot        . t) ;; graphviz-dot-mode
-     (emacs-lisp . t)
-     ;; (haskell    . t)
-     ;; (js         . t)
-     (latex      . t)
-     (lua      . t)
-     (org        . t)
-     ;; (prolog     . t)
-     (python     . t)
-     ;; (sh         . t)
-     (shell      . t)
-     ;; (sql        . t)
-     ;; (sqlite     . t)
-     ))
+    (org-babel-do-load-languages
+     'org-babel-load-languages
+     '(
+       (C          . t) ;; C, C++
+       (R          . t)
+       ;; (clojure    . t)
+       ;; (ditaa      . t)
+       ;; (dot        . t) ;; graphviz-dot-mode
+       (emacs-lisp . t)
+       ;; (haskell    . t)
+       ;; (js         . t)
+       (latex      . t)
+       (lua      . t)
+       (org        . t)
+       ;; (prolog     . t)
+       (python     . t)
+       ;; (sh         . t)
+       (shell      . t)
+       ;; (sql        . t)
+       ;; (sqlite     . t)
+       ))
 
-  ;; perl support
+    ;; perl support
   
-  (require 'ob-perl)
+    (require 'ob-perl)
   
-  (use-package gnuplot
-    :ensure t
-    )
+    (use-package gnuplot
+      :ensure t
+      )
 
-  (use-package gnuplot-mode
-    :ensure t
-    )
+    (use-package gnuplot-mode
+      :ensure t
+      )
 
-  ); end -- org --
+    ); end -- org --
 
 
 #+end_src
@@ -1835,3 +1872,48 @@ source: https://github.com/emacsorphanage/ox-pandoc
 
 #+end_src
 
+**** initial screen
+
+#+begin_src emacs-lisp
+;;;~ FRAME 1: load custom init file: user-init-file
+(setq initial-scratch-message "# This buffer is for text that is not saved, and for org babel evaluation.
+# To create a file, visit it with \\[find-file] and enter text in its buffer.
+
+,#+name: sh-code
+,#+header: :term t
+,#+header: :results verbatim silent
+,#+begin_src sh
+ls
+,#+end_src
+
+,#+name: bash-code
+,#+header: :term t
+,#+header: :results verbatim silent
+,#+begin_src bash
+ls
+,#+end_src
+
+,#+name: python-code
+,#+header: :term t
+,#+begin_src python
+print(\"hello\")
+,#+end_src
+
+# return cursor to this point after execute this org babel block
+,#+begin_src emacs-lisp
+(save-excursion
+  ;; go to specific org babel block
+  (dolist (babel-block '(\"sh-code\" \"python-code\"))
+    (org-babel-goto-named-src-block babel-block)
+    ;; run code
+    (org-ctrl-c-ctrl-c)
+    )
+  )
+,#+end_src
+
+")
+
+(org-mode)
+;;;~  * dont show startup statistics
+(remove-hook 'emacs-startup-hook 'use-package-report)
+#+end_src
